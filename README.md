@@ -1,6 +1,10 @@
-# S3 Specification Generator
+# Specification Generator with AWS Step Functions
 
-Automated document processing system that transforms uploaded files into structured specification documents using AI.
+This is a prototype application showing how a fully serverless approach to analyse files of different programming languages, and generate a specification document from it.
+
+The logic for this is implemented using AWS Step Functions. The state machine is triggered from an Amazon EventBridge rule when a new object has been uploaded to an input Amazon S3 bucket. The specification itself is generated using a Claude model via Amazon Bedrock. It is then written into a markdown file, and moved to an output Amazon S3 bucket.
+
+A user is notified via email when a new specification has been generated. This email contains a pre-signed URL for the specification, so that they do not need to have access to the AWS console or AWS CLI.
 
 ## Project Structure
 
