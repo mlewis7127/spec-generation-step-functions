@@ -9,12 +9,13 @@ A user is notified via email when a new specification has been generated. This e
 ## Project Structure
 
 ```
-s3-spec-generator/
+spec-generation-step-functions/
 ├── src/
 │   ├── lambda/                    # Lambda function implementations
 │   │   ├── read-file/            # File reading Lambda
 │   │   ├── process-with-claude/  # Claude processing Lambda
-│   │   └── write-specification/  # Specification writing Lambda
+│   │   ├── write-specification/  # Specification writing Lambda
+│   │   └── send-notification/    # Notification Lambda
 │   └── shared/                   # Shared utilities and types
 │       ├── types.ts             # TypeScript type definitions
 │       ├── utils.ts             # Utility functions
@@ -25,18 +26,23 @@ s3-spec-generator/
 │   ├── config/                  # Environment configuration
 │   │   └── environment.ts
 │   └── app.ts                   # CDK application entry point
+├── deployment/                  # Deployment configurations
+│   ├── environments/            # Environment-specific configs
+│   │   ├── dev.json
+│   │   ├── staging.json
+│   │   └── prod.json
+│   ├── env-templates/           # Environment variable templates
+│   ├── DEPLOYMENT_CHECKLIST.md
+│   └── README.md
+├── scripts/                     # Deployment and utility scripts
 ├── test/                        # Test files
-│   └── setup.ts                 # Jest test setup
-├── .kiro/specs/                 # Kiro specification documents
-│   └── s3-spec-generator/
-│       ├── requirements.md
-│       ├── design.md
-│       └── tasks.md
+│   └── setup.ts
+├── test_data/                   # Sample test files
 ├── package.json                 # Node.js dependencies and scripts
 ├── tsconfig.json               # TypeScript configuration
+├── tsconfig.lambda.json        # Lambda-specific TypeScript config
 ├── cdk.json                    # CDK configuration
 ├── jest.config.js              # Jest testing configuration
-├── .env.example                # Environment variables template
 └── .gitignore                  # Git ignore rules
 ```
 
