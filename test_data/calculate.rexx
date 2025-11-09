@@ -1,5 +1,3 @@
-/* REXX */
-
 parse arg num1 num2
 
 if num1 = "" | num2 = "" then do
@@ -10,3 +8,5 @@ end
 result = num1 * num2
 say result
 exit 0
+
+
