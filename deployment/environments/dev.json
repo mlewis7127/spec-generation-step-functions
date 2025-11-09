@@ -4,7 +4,7 @@
   "account": "auto-detect",
   "stackName": "S3SpecGenerator-dev",
   "parameters": {
-    "notificationEmail": "reinvent2025@proton.me",
+    "notificationEmail": "",
     "enableXRayTracing": "false",
     "logRetentionDays": "3"
   },

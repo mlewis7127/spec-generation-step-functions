@@ -53,7 +53,7 @@ s3-spec-generator/
 
 3. Configure AWS credentials and update the environment JSON file with your settings (especially `notificationEmail`)
 
-4. Build the project:
+4. Build the project (compiles TypeScript and prepares Lambda functions):
    ```bash
    npm run build
    ```
