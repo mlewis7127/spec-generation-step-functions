@@ -19,8 +19,7 @@ This checklist ensures a successful and secure deployment of the S3 Specificatio
 - [ ] Tags properly configured
 
 ### 3. Security Requirements
-- [ ] Notification email configured
-- [ ] Secrets management strategy defined
+- [ ] Notification email configured in environment config
 - [ ] IAM permissions reviewed
 - [ ] Encryption settings verified
 - [ ] Network security requirements met
@@ -40,9 +39,6 @@ This checklist ensures a successful and secure deployment of the S3 Specificatio
 # Validate configuration
 npm run validate:config -- -e dev
 
-# Create default secrets and parameters
-npm run secrets:create -- -e dev
-
 # Deploy infrastructure
 npm run deploy:dev
 
@@ -55,12 +51,6 @@ npm run validate:dev
 ```bash
 # Validate configuration with strict checks
 npm run validate:config:strict -- -e staging
-
-# Create secrets and parameters
-npm run secrets:create -- -e staging
-
-# Set notification email
-./scripts/manage-secrets.sh set-secret -e staging -n notification-email -v "staging-alerts@company.com"
 
 # Deploy infrastructure
 npm run deploy:staging
@@ -77,13 +67,6 @@ npm run validate:staging
 ```bash
 # Validate configuration with strict checks
 npm run validate:config:strict -- -e prod
-
-# Create secrets and parameters
-npm run secrets:create -- -e prod
-
-# Set production secrets
-./scripts/manage-secrets.sh set-secret -e prod -n notification-email -v "prod-alerts@company.com"
-./scripts/manage-secrets.sh set-secret -e prod -n slack-webhook-url -v "https://hooks.slack.com/..."
 
 # Deploy infrastructure (requires manual approval)
 npm run deploy:prod
@@ -114,7 +97,6 @@ npm run validate:prod
 ### 3. Security Verification
 - [ ] S3 buckets have proper encryption
 - [ ] IAM roles follow least privilege principle
-- [ ] Secrets stored securely in AWS Secrets Manager
 - [ ] Public access blocked on S3 buckets
 - [ ] SSL/TLS enforced for all communications
 
@@ -208,14 +190,12 @@ For production environments with ongoing traffic:
 
 ### Regular Tasks
 - [ ] Monitor CloudWatch metrics and alarms
-- [ ] Review and rotate secrets quarterly
 - [ ] Update Lambda runtime versions
 - [ ] Review and optimize costs
 - [ ] Update documentation
 
 ### Security Updates
 - [ ] Review IAM policies quarterly
-- [ ] Update encryption keys annually
 - [ ] Audit access logs monthly
 - [ ] Review compliance requirements
 

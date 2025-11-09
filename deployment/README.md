@@ -39,19 +39,13 @@ export ENVIRONMENT=prod
 npm run validate:config -- -e $ENVIRONMENT
 ```
 
-### 3. Create Secrets and Parameters
-
-```bash
-npm run secrets:create -- -e $ENVIRONMENT
-```
-
-### 4. Deploy Infrastructure
+### 3. Deploy Infrastructure
 
 ```bash
 npm run deploy:$ENVIRONMENT
 ```
 
-### 5. Validate Deployment
+### 4. Validate Deployment
 
 ```bash
 npm run validate:$ENVIRONMENT
@@ -66,10 +60,7 @@ npm run validate:$ENVIRONMENT
 - `npm run validate:config` - Validate deployment configuration
 - `npm run validate:config:strict` - Strict configuration validation
 
-### Secrets Management
-- `npm run secrets:list` - List all secrets and parameters
-- `npm run secrets:create` - Create default secrets and parameters
-- `npm run secrets:validate` - Validate required secrets exist
+
 
 ### Deployment
 - `npm run deploy:dev` - Deploy to development
@@ -141,43 +132,10 @@ cp deployment/env-templates/.env.dev.template .env.dev
 ### Optional Variables
 - `AWS_PROFILE` - AWS CLI profile to use
 - `SLACK_WEBHOOK_URL` - Slack webhook for notifications
-- `CLAUDE_API_KEY` - Claude API key (if not using Bedrock)
 
-## Secrets Management
+## Configuration Management
 
-The system uses AWS Secrets Manager and SSM Parameter Store for configuration:
-
-### Secrets (AWS Secrets Manager)
-- `/s3-spec-generator/{env}/secrets/claude-api-key` - Claude API key
-- `/s3-spec-generator/{env}/secrets/notification-email` - Notification email
-- `/s3-spec-generator/{env}/secrets/slack-webhook-url` - Slack webhook URL
-- `/s3-spec-generator/{env}/secrets/encryption-key` - Additional encryption key
-
-### Parameters (SSM Parameter Store)
-- `/s3-spec-generator/{env}/parameters/max-file-size` - Maximum file size
-- `/s3-spec-generator/{env}/parameters/file-retention-days` - File retention period
-- `/s3-spec-generator/{env}/parameters/claude-model` - Claude model identifier
-- `/s3-spec-generator/{env}/parameters/enable-xray-tracing` - X-Ray tracing flag
-- `/s3-spec-generator/{env}/parameters/log-retention-days` - Log retention period
-
-### Managing Secrets
-
-```bash
-# List all secrets and parameters
-./scripts/manage-secrets.sh list -e dev
-
-# Set a secret
-./scripts/manage-secrets.sh set-secret -e dev -n notification-email -v "admin@example.com"
-
-# Get a secret
-./scripts/manage-secrets.sh get-secret -e dev -n notification-email
-
-# Set a parameter
-./scripts/manage-secrets.sh set-parameter -e dev -n max-file-size -v "10485760"
-
-# Validate all secrets exist
-./scripts/manage-secrets.sh validate -e dev
-```
+The system uses environment-specific JSON configuration files for all settings. No external secrets management is required for basic operation.
 
 ## Deployment Process
 
