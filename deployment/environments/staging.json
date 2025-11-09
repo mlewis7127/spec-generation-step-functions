@@ -1,0 +1,36 @@
+{
+  "environment": "staging",
+  "region": "us-east-1",
+  "account": "auto-detect",
+  "stackName": "S3SpecGenerator-staging",
+  "parameters": {
+    "notificationEmail": "",
+    "enableXRayTracing": "true",
+    "logRetentionDays": "14"
+  },
+  "tags": {
+    "Project": "S3SpecGenerator",
+    "Environment": "staging",
+    "Owner": "DevTeam",
+    "CostCenter": "Engineering",
+    "ManagedBy": "CDK",
+    "Repository": "s3-spec-generator",
+    "Backup": "enabled"
+  },
+  "deployment": {
+    "requireApproval": false,
+    "enableTerminationProtection": false,
+    "enableRollback": true,
+    "timeoutMinutes": 45
+  },
+  "resources": {
+    "lambdaMemorySize": {
+      "readFile": 768,
+      "processWithClaude": 1536,
+      "writeSpecification": 384,
+      "sendNotification": 384
+    },
+    "fileRetentionDays": 14,
+    "maxFileSize": 10485760
+  }
+}
