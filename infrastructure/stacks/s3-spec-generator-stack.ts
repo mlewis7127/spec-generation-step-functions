@@ -1412,12 +1412,6 @@ export class S3SpecGeneratorStack extends cdk.Stack {
           object: {
             key: [
               // Include supported file formats and exclude system files
-              { suffix: '.txt' },
-              { suffix: '.pdf' },
-              { suffix: '.doc' },
-              { suffix: '.docx' },
-              { suffix: '.md' },
-              { suffix: '.rtf' },
               { suffix: '.java' },
               { suffix: '.rexx' },
               { suffix: '.py' },
