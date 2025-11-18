@@ -2,7 +2,7 @@
 
 This is a prototype application showing how a fully serverless approach to analyse files of different programming languages, and generate a specification document from it.
 
-The logic for this is implemented using AWS Step Functions. The state machine is triggered from an Amazon EventBridge rule when a new object has been uploaded to an input Amazon S3 bucket. The specification itself is generated using a Claude model via Amazon Bedrock. It is then written into a markdown file, and moved to an output Amazon S3 bucket.
+The logic for this is implemented using AWS Step Functions. The state machine is triggered from an Amazon EventBridge rule when a new object has been uploaded to an input Amazon S3 bucket. The specification itself is generated using an LLM via Amazon Bedrock (supports Claude, Nova, and other models). It is then written into a markdown file, and moved to an output Amazon S3 bucket.
 
 A user is notified via email when a new specification has been generated. This email contains a pre-signed URL for the specification, so that they do not need to have access to the AWS console or AWS CLI.
 
@@ -13,7 +13,7 @@ spec-generation-step-functions/
 ├── src/
 │   ├── lambda/                    # Lambda function implementations
 │   │   ├── read-file/            # File reading Lambda
-│   │   ├── process-with-claude/  # Claude processing Lambda
+│   │   ├── process-with-claude/  # LLM processing Lambda (supports Claude, Nova, etc.)
 │   │   ├── write-specification/  # Specification writing Lambda
 │   │   └── send-notification/    # Notification Lambda
 │   └── shared/                   # Shared utilities and types
@@ -92,7 +92,7 @@ The system uses an event-driven architecture with AWS Step Functions orchestrati
 
 1. Files uploaded to S3 input bucket trigger Step Functions execution
 2. ReadFileFunction reads and validates the uploaded file
-3. ProcessWithClaudeFunction sends content to Claude LLM via Bedrock
+3. LLM processing function sends content to Bedrock (supports Claude, Nova, and other models)
 4. WriteSpecificationFunction saves generated specifications to output bucket
 5. SNS notifications inform users of processing status
 
