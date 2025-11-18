@@ -27,7 +27,7 @@
   "resources": {
     "lambdaMemorySize": {
       "readFile": 1024,
-      "processWithClaude": 2048,
+      "processWithLLM": 2048,
       "writeSpecification": 512,
       "sendNotification": 512
     },

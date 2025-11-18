@@ -1,6 +1,6 @@
 import { Context } from 'aws-lambda';
-import { BedrockRuntimeClient, InvokeModelCommand } from '@aws-sdk/client-bedrock-runtime';
-import { FileProcessingEvent, ClaudeRequest, ClaudeResponse, ProcessingError } from '../../shared/types';
+import { BedrockRuntimeClient, ConverseCommand } from '@aws-sdk/client-bedrock-runtime';
+import { FileProcessingEvent, ConverseMessage, ConverseResponse, ProcessingError } from '../../shared/types';
 import { 
   createProcessingError, 
   logInfo, 
@@ -8,21 +8,22 @@ import {
   logMetric,
   logPerformanceMetric
 } from '../../shared/utils';
-import { CLAUDE_CONFIG, ERROR_MESSAGES, RETRY_CONFIG } from '../../shared/constants';
+import { LLM_CONFIG, ERROR_MESSAGES, RETRY_CONFIG } from '../../shared/constants';
 
 const bedrockClient = new BedrockRuntimeClient({ region: process.env.AWS_REGION || 'us-east-1' });
 
 /**
- * Lambda function to process file content with Claude LLM via Amazon Bedrock
+ * Lambda function to process file content with LLM via Amazon Bedrock
  * Handles prompt engineering and response validation
+ * Supports any Bedrock model (Claude, Nova, etc.)
  */
 export const handler = async (
   event: FileProcessingEvent | ProcessingError,
   context: Context
 ): Promise<{ generatedSpecification: string; metadata: any } | ProcessingError> => {
   const startTime = Date.now();
-  logInfo('ProcessWithClaudeFunction started', { requestId: context.awsRequestId });
-  logMetric('ProcessWithClaudeInvocations', 1);
+  logInfo('ProcessWithLLM function started', { requestId: context.awsRequestId });
+  logMetric('LLMProcessingInvocations', 1);
 
   try {
     // Check if input event is an error from previous step
@@ -36,7 +37,7 @@ export const handler = async (
     // Validate that we have the required content
     if (!fileEvent.content) {
       const error = createProcessingError(
-        'CLAUDE_PROCESSING_ERROR',
+        'LLM_PROCESSING_ERROR',
         'No content received from ReadFileFunction',
         fileEvent.key || 'unknown',
         { receivedEvent: fileEvent }
@@ -45,85 +46,84 @@ export const handler = async (
       return error;
     }
 
-    logInfo('Processing file content with Claude', { 
+    logInfo('Processing file content with LLM', { 
       originalFile: fileEvent.key,
       contentLength: fileEvent.content.length,
       fileType: fileEvent.fileType 
     });
 
-    // Generate specification using Claude with retry logic
-    const startTime = Date.now();
-    const claudeResult = await processWithClaudeRetry(fileEvent, context);
+    // Generate specification using LLM with retry logic
+    const processingStartTime = Date.now();
+    const result = await processWithLLMRetry(fileEvent);
     
-    if ('errorType' in claudeResult) {
-      return claudeResult;
+    if ('errorType' in result) {
+      return result;
     }
 
-    const processingTime = (Date.now() - startTime) / 1000;
+    const processingTime = (Date.now() - processingStartTime) / 1000;
     
     // Log performance and token usage metrics
-    logPerformanceMetric('ProcessWithClaude', startTime, {
+    logPerformanceMetric('ProcessWithLLM', processingStartTime, {
       originalFile: fileEvent.key,
-      outputLength: claudeResult.generatedSpecification.length,
-      inputTokens: claudeResult.inputTokens,
-      outputTokens: claudeResult.outputTokens
+      outputLength: result.generatedSpecification.length,
+      inputTokens: result.inputTokens,
+      outputTokens: result.outputTokens
     });
     
-    logMetric('ProcessWithClaudeSuccess', 1);
-    logMetric('ClaudeInputTokens', claudeResult.inputTokens);
-    logMetric('ClaudeOutputTokens', claudeResult.outputTokens);
+    logMetric('LLMProcessingSuccess', 1);
+    logMetric('LLMInputTokens', result.inputTokens);
+    logMetric('LLMOutputTokens', result.outputTokens);
     
-    logInfo('Claude processing completed successfully', {
+    logInfo('LLM processing completed successfully', {
       originalFile: fileEvent.key,
       processingTimeSeconds: processingTime,
-      outputLength: claudeResult.generatedSpecification.length
+      outputLength: result.generatedSpecification.length
     });
 
     return {
-      generatedSpecification: claudeResult.generatedSpecification,
+      generatedSpecification: result.generatedSpecification,
       metadata: {
         originalFile: fileEvent.key,
         originalBucket: fileEvent.bucket,
         fileType: fileEvent.fileType,
         processingTimeSeconds: processingTime,
-        inputTokens: claudeResult.inputTokens,
-        outputTokens: claudeResult.outputTokens,
+        inputTokens: result.inputTokens,
+        outputTokens: result.outputTokens,
         timestamp: new Date().toISOString()
       }
     };
 
   } catch (error) {
-    logMetric('ProcessWithClaudeErrors', 1);
-    logPerformanceMetric('ProcessWithClaude', startTime, { error: true });
+    logMetric('LLMProcessingErrors', 1);
+    logPerformanceMetric('ProcessWithLLM', startTime, { error: true });
     
     const processingError = createProcessingError(
-      'CLAUDE_PROCESSING_ERROR',
-      `Unexpected error in ProcessWithClaudeFunction: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      'LLM_PROCESSING_ERROR',
+      `Unexpected error in ProcessWithLLM function: ${error instanceof Error ? error.message : 'Unknown error'}`,
       'errorType' in event ? undefined : (event as FileProcessingEvent).key,
       error
     );
-    logError('ProcessWithClaudeFunction failed with unexpected error', processingError);
+    logError('ProcessWithLLM function failed with unexpected error', processingError);
     return processingError;
   }
 };
 
 /**
- * Process content with Claude using retry logic
+ * Process content with LLM using retry logic
  */
-async function processWithClaudeRetry(
-  fileEvent: FileProcessingEvent,
-  context: Context
+async function processWithLLMRetry(
+  fileEvent: FileProcessingEvent
 ): Promise<{ generatedSpecification: string; inputTokens: number; outputTokens: number } | ProcessingError> {
   
   let lastError: any;
   
   for (let attempt = 1; attempt <= RETRY_CONFIG.MAX_ATTEMPTS; attempt++) {
     try {
-      logInfo(`Claude processing attempt ${attempt}/${RETRY_CONFIG.MAX_ATTEMPTS}`, {
+      logInfo(`LLM processing attempt ${attempt}/${RETRY_CONFIG.MAX_ATTEMPTS}`, {
         originalFile: fileEvent.key
       });
 
-      const result = await processWithClaude(fileEvent);
+      const result = await processWithLLM(fileEvent);
       
       if ('errorType' in result) {
         lastError = result;
@@ -158,17 +158,17 @@ async function processWithClaudeRetry(
 
   // All retries exhausted
   return createProcessingError(
-    'CLAUDE_PROCESSING_ERROR',
-    `Failed to process with Claude after ${RETRY_CONFIG.MAX_ATTEMPTS} attempts`,
+    'LLM_PROCESSING_ERROR',
+    `Failed to process with LLM after ${RETRY_CONFIG.MAX_ATTEMPTS} attempts`,
     fileEvent.key,
     lastError
   );
 }
 
 /**
- * Process file content with Claude LLM
+ * Process file content with LLM via Bedrock Converse API
  */
-async function processWithClaude(
+async function processWithLLM(
   fileEvent: FileProcessingEvent
 ): Promise<{ generatedSpecification: string; inputTokens: number; outputTokens: number } | ProcessingError> {
   
@@ -176,63 +176,62 @@ async function processWithClaude(
     // Create prompt based on file type and content
     const prompt = createSpecificationPrompt(fileEvent);
     
-    // Prepare Claude request
-    const claudeRequest: ClaudeRequest = {
-      anthropic_version: CLAUDE_CONFIG.ANTHROPIC_VERSION,
-      max_tokens: CLAUDE_CONFIG.MAX_TOKENS,
-      temperature: CLAUDE_CONFIG.TEMPERATURE,
-      system: CLAUDE_CONFIG.SYSTEM_PROMPT,
-      messages: [
-        {
-          role: 'user',
-          content: prompt
-        }
-      ]
-    };
+    // Get model ID from environment or use default
+    const modelId = process.env.BEDROCK_MODEL_ID || 'anthropic.claude-3-5-sonnet-20250219-v1:0';
+    
+    // Prepare messages in Converse API format
+    const messages: ConverseMessage[] = [
+      {
+        role: 'user',
+        content: [{ text: prompt }]
+      }
+    ];
 
-    logInfo('Sending request to Claude', {
+    logInfo('Sending request to Bedrock', {
       originalFile: fileEvent.key,
       promptLength: prompt.length,
-      maxTokens: CLAUDE_CONFIG.MAX_TOKENS
+      maxTokens: LLM_CONFIG.MAX_TOKENS,
+      modelId
     });
 
-    // Invoke Claude via Bedrock
-    const command = new InvokeModelCommand({
-      modelId: process.env.CLAUDE_MODEL || 'anthropic.claude-3-5-sonnet-20250219-v1:0',
-      contentType: 'application/json',
-      accept: 'application/json',
-      body: JSON.stringify(claudeRequest)
+    // Invoke model via Bedrock Converse API
+    const command = new ConverseCommand({
+      modelId,
+      messages,
+      system: [{ text: LLM_CONFIG.SYSTEM_PROMPT }],
+      inferenceConfig: {
+        maxTokens: LLM_CONFIG.MAX_TOKENS,
+        temperature: LLM_CONFIG.TEMPERATURE
+      }
     });
 
     const response = await bedrockClient.send(command);
     
-    if (!response.body) {
+    if (!response.output?.message) {
       return createProcessingError(
-        'CLAUDE_PROCESSING_ERROR',
-        'Empty response body from Bedrock',
+        'LLM_PROCESSING_ERROR',
+        'Empty response from Bedrock',
         fileEvent.key,
         { retryable: true }
       );
     }
 
-    // Parse Claude response
-    const responseBody = JSON.parse(new TextDecoder().decode(response.body));
-    const claudeResponse = responseBody as ClaudeResponse;
+    const converseResponse = response as ConverseResponse;
 
-    logInfo('Received response from Claude', {
+    logInfo('Received response from Bedrock', {
       originalFile: fileEvent.key,
-      inputTokens: claudeResponse.usage?.input_tokens,
-      outputTokens: claudeResponse.usage?.output_tokens,
-      stopReason: claudeResponse.stop_reason
+      inputTokens: converseResponse.usage?.inputTokens,
+      outputTokens: converseResponse.usage?.outputTokens,
+      stopReason: converseResponse.stopReason
     });
 
     // Validate and extract specification content
-    const validationResult = validateClaudeResponse(claudeResponse, fileEvent.key);
+    const validationResult = validateLLMResponse(converseResponse, fileEvent.key);
     if (validationResult) {
       return validationResult;
     }
 
-    const generatedSpecification = claudeResponse.content[0].text;
+    const generatedSpecification = converseResponse.output.message.content[0].text;
 
     // Validate generated markdown
     const markdownValidation = validateMarkdownSpecification(generatedSpecification, fileEvent.key);
@@ -242,17 +241,17 @@ async function processWithClaude(
 
     return {
       generatedSpecification,
-      inputTokens: claudeResponse.usage?.input_tokens || 0,
-      outputTokens: claudeResponse.usage?.output_tokens || 0
+      inputTokens: converseResponse.usage?.inputTokens || 0,
+      outputTokens: converseResponse.usage?.outputTokens || 0
     };
 
   } catch (error) {
-    // Handle specific Bedrock/Claude errors
+    // Handle specific Bedrock errors
     if (error instanceof Error) {
       if (error.message.includes('ThrottlingException') || error.message.includes('rate limit')) {
         return createProcessingError(
-          'CLAUDE_PROCESSING_ERROR',
-          'Claude API rate limit exceeded',
+          'LLM_PROCESSING_ERROR',
+          'Bedrock API rate limit exceeded',
           fileEvent.key,
           { error: error.message, retryable: true }
         );
@@ -260,8 +259,8 @@ async function processWithClaude(
       
       if (error.message.includes('ValidationException')) {
         return createProcessingError(
-          'CLAUDE_PROCESSING_ERROR',
-          'Invalid request to Claude API',
+          'LLM_PROCESSING_ERROR',
+          'Invalid request to Bedrock API',
           fileEvent.key,
           { error: error.message, retryable: false }
         );
@@ -269,8 +268,8 @@ async function processWithClaude(
     }
 
     return createProcessingError(
-      'CLAUDE_PROCESSING_ERROR',
-      ERROR_MESSAGES.CLAUDE_API_ERROR,
+      'LLM_PROCESSING_ERROR',
+      ERROR_MESSAGES.LLM_API_ERROR,
       fileEvent.key,
       { error: error instanceof Error ? error.message : String(error), retryable: true }
     );
@@ -311,40 +310,40 @@ Generate the specification document:`;
 }
 
 /**
- * Validate Claude API response structure
+ * Validate Bedrock Converse API response structure
  */
-function validateClaudeResponse(response: ClaudeResponse, originalFile: string): ProcessingError | null {
+function validateLLMResponse(response: ConverseResponse, originalFile: string): ProcessingError | null {
   if (!response) {
     return createProcessingError(
-      'CLAUDE_PROCESSING_ERROR',
+      'LLM_PROCESSING_ERROR',
       ERROR_MESSAGES.INVALID_RESPONSE,
       originalFile,
       { reason: 'Empty response', retryable: true }
     );
   }
 
-  if (!response.content || !Array.isArray(response.content) || response.content.length === 0) {
+  if (!response.output?.message?.content || !Array.isArray(response.output.message.content) || response.output.message.content.length === 0) {
     return createProcessingError(
-      'CLAUDE_PROCESSING_ERROR',
+      'LLM_PROCESSING_ERROR',
       ERROR_MESSAGES.INVALID_RESPONSE,
       originalFile,
       { reason: 'Missing or empty content array', retryable: true }
     );
   }
 
-  if (!response.content[0] || typeof response.content[0].text !== 'string') {
+  if (!response.output.message.content[0] || typeof response.output.message.content[0].text !== 'string') {
     return createProcessingError(
-      'CLAUDE_PROCESSING_ERROR',
+      'LLM_PROCESSING_ERROR',
       ERROR_MESSAGES.INVALID_RESPONSE,
       originalFile,
       { reason: 'Missing or invalid text content', retryable: true }
     );
   }
 
-  if (response.content[0].text.trim().length === 0) {
+  if (response.output.message.content[0].text.trim().length === 0) {
     return createProcessingError(
-      'CLAUDE_PROCESSING_ERROR',
-      'Claude returned empty specification content',
+      'LLM_PROCESSING_ERROR',
+      'LLM returned empty specification content',
       originalFile,
       { retryable: true }
     );
@@ -362,7 +361,7 @@ function validateMarkdownSpecification(specification: string, originalFile: stri
   // Check minimum length
   if (trimmedSpec.length < 100) {
     return createProcessingError(
-      'CLAUDE_PROCESSING_ERROR',
+      'LLM_PROCESSING_ERROR',
       'Generated specification is too short to be meaningful',
       originalFile,
       { specificationLength: trimmedSpec.length, retryable: true }
@@ -372,7 +371,7 @@ function validateMarkdownSpecification(specification: string, originalFile: stri
   // Check for basic markdown structure (at least one header)
   if (!trimmedSpec.includes('#')) {
     return createProcessingError(
-      'CLAUDE_PROCESSING_ERROR',
+      'LLM_PROCESSING_ERROR',
       'Generated specification lacks proper markdown structure (no headers found)',
       originalFile,
       { retryable: true }
@@ -394,10 +393,10 @@ function validateMarkdownSpecification(specification: string, originalFile: stri
   for (const indicator of errorIndicators) {
     if (lowerSpec.includes(indicator)) {
       return createProcessingError(
-        'CLAUDE_PROCESSING_ERROR',
-        'Claude was unable to process the content properly',
+        'LLM_PROCESSING_ERROR',
+        'LLM was unable to process the content properly',
         originalFile,
-        { reason: 'Claude refusal or inability', retryable: true }
+        { reason: 'Model refusal or inability', retryable: true }
       );
     }
   }

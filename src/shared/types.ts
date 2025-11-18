@@ -12,31 +12,30 @@ export interface FileProcessingEvent {
   fileType: string;
 }
 
-export interface ClaudeRequest {
-  anthropic_version: string;
-  max_tokens: number;
-  messages: Array<{
-    role: 'user' | 'assistant';
-    content: string;
-  }>;
-  temperature: number;
-  system?: string;
-}
-
-export interface ClaudeResponse {
+// Bedrock Converse API types (model-agnostic)
+export interface ConverseMessage {
+  role: 'user' | 'assistant';
   content: Array<{
-    type: string;
     text: string;
   }>;
-  id: string;
-  model: string;
-  role: string;
-  stop_reason: string;
-  stop_sequence: null;
-  type: string;
+}
+
+export interface ConverseResponse {
+  output: {
+    message: {
+      role: string;
+      content: Array<{
+        text: string;
+      }>;
+    };
+  };
+  stopReason: string;
   usage: {
-    input_tokens: number;
-    output_tokens: number;
+    inputTokens: number;
+    outputTokens: number;
+  };
+  metrics?: {
+    latencyMs: number;
   };
 }
 
@@ -53,7 +52,7 @@ export interface SpecificationOutput {
 }
 
 export interface ProcessingError {
-  errorType: 'FILE_READ_ERROR' | 'CLAUDE_PROCESSING_ERROR' | 'OUTPUT_WRITE_ERROR' | 'FILE_TOO_LARGE_FOR_STEP_FUNCTIONS';
+  errorType: 'FILE_READ_ERROR' | 'LLM_PROCESSING_ERROR' | 'OUTPUT_WRITE_ERROR' | 'FILE_TOO_LARGE_FOR_STEP_FUNCTIONS';
   message: string;
   timestamp: string;
   originalFile?: string;

@@ -7,7 +7,7 @@ export interface EnvironmentConfig {
   lambdaTimeout: number;
   lambdaMemorySize: {
     readFile: number;
-    processWithClaude: number;
+    processWithLLM: number;
     writeSpecification: number;
     sendNotification: number;
   };
@@ -45,7 +45,7 @@ export function getConfig(): EnvironmentConfig {
     lambdaTimeout: 300, // 5 minutes
     lambdaMemorySize: {
       readFile: 512,
-      processWithClaude: 1024,
+      processWithLLM: 1024,
       writeSpecification: 256,
       sendNotification: 256,
     },
@@ -85,7 +85,7 @@ export function getConfig(): EnvironmentConfig {
         ...baseConfig,
         lambdaMemorySize: {
           readFile: 1024,
-          processWithClaude: 2048,
+          processWithLLM: 2048,
           writeSpecification: 512,
           sendNotification: 512,
         },
@@ -113,7 +113,7 @@ export function getConfig(): EnvironmentConfig {
         ...baseConfig,
         lambdaMemorySize: {
           readFile: 768,
-          processWithClaude: 1536,
+          processWithLLM: 1536,
           writeSpecification: 384,
           sendNotification: 384,
         },

@@ -85,8 +85,8 @@ describe('SendNotificationFunction', () => {
     const failureEvent = {
       type: 'failure' as const,
       data: {
-        errorType: 'CLAUDE_PROCESSING_ERROR' as const,
-        message: 'Failed to process with Claude',
+        errorType: 'LLM_PROCESSING_ERROR' as const,
+        message: 'Failed to process with LLM',
         timestamp: '2023-10-01T12:00:00Z',
         originalFile: 'test-document.pdf'
       } as ProcessingError
