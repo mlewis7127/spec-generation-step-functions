@@ -123,7 +123,7 @@ async function processWithClaudeRetry(
         originalFile: fileEvent.key
       });
 
-      const result = await processWithClaude(fileEvent, context);
+      const result = await processWithClaude(fileEvent);
       
       if ('errorType' in result) {
         lastError = result;
@@ -169,8 +169,7 @@ async function processWithClaudeRetry(
  * Process file content with Claude LLM
  */
 async function processWithClaude(
-  fileEvent: FileProcessingEvent,
-  context: Context
+  fileEvent: FileProcessingEvent
 ): Promise<{ generatedSpecification: string; inputTokens: number; outputTokens: number } | ProcessingError> {
   
   try {
