@@ -1173,7 +1173,7 @@ export class S3SpecGeneratorStack extends cdk.Stack {
       code: lambda.Code.fromAsset('dist/lambda/process-with-claude'),
       role: lambdaRoles.processWithClaudeRole,
       timeout: cdk.Duration.seconds(config.lambdaTimeout),
-      memorySize: config.lambdaMemorySize.processWithClaude,
+      memorySize: config.lambdaMemorySize.processWithLLM,
       environment: commonEnvVars,
       logGroup: this.logGroups.processWithClaude,
       tracing: config.monitoring.enableXRayTracing ? lambda.Tracing.ACTIVE : lambda.Tracing.DISABLED,
