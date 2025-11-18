@@ -173,11 +173,12 @@ async function processWithLLM(
 ): Promise<{ generatedSpecification: string; inputTokens: number; outputTokens: number } | ProcessingError> {
   
   try {
+    
     // Create prompt based on file type and content
     const prompt = createSpecificationPrompt(fileEvent);
     
     // Get model ID from environment or use default
-    const modelId = process.env.BEDROCK_MODEL_ID || 'anthropic.claude-3-sonnet-20240229-v1:0';
+    const modelId = process.env.BEDROCK_MODEL_ID || 'us.amazon.nova-lite-v1:0';
     
     // Prepare messages in Converse API format
     const messages: ConverseMessage[] = [
@@ -186,13 +187,6 @@ async function processWithLLM(
         content: [{ text: prompt }]
       }
     ];
-
-    logInfo('Sending request to Bedrock', {
-      originalFile: fileEvent.key,
-      promptLength: prompt.length,
-      maxTokens: LLM_CONFIG.MAX_TOKENS,
-      modelId
-    });
 
     // Invoke model via Bedrock Converse API
     const command = new ConverseCommand({
