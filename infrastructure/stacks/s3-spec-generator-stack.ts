@@ -1131,7 +1131,7 @@ export class S3SpecGeneratorStack extends cdk.Stack {
       INPUT_BUCKET_NAME: this.inputBucket.bucketName,
       OUTPUT_BUCKET_NAME: this.outputBucket.bucketName,
       NOTIFICATION_TOPIC_ARN: this.notificationTopic.topicArn,
-      CLAUDE_MODEL: config.claudeModel,
+      BEDROCK_MODEL_ID: config.claudeModel,
       MAX_FILE_SIZE: config.maxFileSize.toString(),
       LOG_LEVEL: config.environment === 'prod' ? 'INFO' : 'DEBUG',
       AWS_NODEJS_CONNECTION_REUSE_ENABLED: '1',
