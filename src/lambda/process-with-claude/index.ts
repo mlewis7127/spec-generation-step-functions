@@ -178,8 +178,9 @@ async function processWithLLM(
     const prompt = createSpecificationPrompt(fileEvent);
     
     // Get model ID from environment or use default
-    const modelId = process.env.BEDROCK_MODEL_ID || 'us.amazon.nova-lite-v1:0';
-    
+    const modelId = process.env.BEDROCK_MODEL_ID || 
+      'us.amazon.nova-lite-v1:0';
+  
     // Prepare messages in Converse API format
     const messages: ConverseMessage[] = [
       {
